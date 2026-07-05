@@ -5,7 +5,7 @@
 #   - typed scalar outputs purity(float)/ploidy(int)/sample_sex(string) for stage linking
 #   - standalone cnv_somatic_tsv / cnv_gene_tsv file outputs (were only inside purple_tar)
 # PURPLE tool flags are FROZEN; the only added flag is -max_ploidy from the cap decision.
-set -eo pipefail
+set -euo pipefail
 
 ATLAS=/home/dnanexus/atlas
 
@@ -17,16 +17,16 @@ main() {
 
     # ── 0. Sanitise sample_id before any path/rm use ────────────────────────
     case "${sample_id}" in
-        *[!A-Za-z0-9._-]* | "" | .* ) echo "ERROR: unsafe sample_id" >&2; exit 1 ;;
+        *[!A-Za-z0-9._-]* | "" | .* | -* ) echo "ERROR: unsafe sample_id '${sample_id}'" >&2; exit 1 ;;
     esac
 
     echo "[setup] Verifying deps (execDepends: java/samtools/tabix/jq/R/circos)..."
-    java    -version  2>&1 | head -1
-    samtools --version 2>&1 | head -1
-    bgzip   --version 2>&1 | head -1
-    jq      --version 2>&1 | head -1
-    Rscript --version 2>&1 | head -1
-    circos  --version 2>&1 | head -1 || echo "circos: $(which circos 2>/dev/null || echo not found)"
+    java    -version  2>&1 | sed -n '1p'
+    samtools --version 2>&1 | sed -n '1p'
+    bgzip   --version 2>&1 | sed -n '1p'
+    jq      --version 2>&1 | sed -n '1p'
+    Rscript --version 2>&1 | sed -n '1p'
+    circos  --version 2>&1 | sed -n '1p' || echo "circos: $(which circos 2>/dev/null || echo not found)"
 
     echo "[1/7] Downloading inputs..."
     dx download "${purple_jar}"        -o purple.jar
@@ -38,6 +38,11 @@ main() {
     dx download "${ref_fai}"           -o ref.fasta.gz.fai
     dx download "${ensembl_data}"      -o ensembl_data.tar.gz
 
+    # somatic_vcf and its index must be supplied together (or neither).
+    if { [[ -n "${somatic_vcf:-}" ]] && [[ -z "${somatic_vcf_tbi:-}" ]]; } || \
+       { [[ -z "${somatic_vcf:-}" ]] && [[ -n "${somatic_vcf_tbi:-}" ]]; }; then
+        echo "ERROR: somatic_vcf and somatic_vcf_tbi must be supplied together (or neither)" >&2; exit 1
+    fi
     SOMATIC_ARG=""
     if [[ -n "${somatic_vcf:-}" ]]; then
         dx download "${somatic_vcf}"     -o somatic.vcf.gz
@@ -120,8 +125,8 @@ RANGE_TSV="${WORK}/${sample_id}.purple.purity.range.tsv"
 # ── 5. Conditional re-run (at most one extra pass) ──────────────────────
 if [ "$CONDITIONAL" = "yes" ]; then
     PURITY=$(python3 -c "import sys;sys.path.insert(0,'$ATLAS');from purity import read_purity_ploidy as r;print(r('$PTSV').purity)")
-    NEED=$(python3 -c "print('yes' if float('$PURITY') < float('${ploidy_cap_purity_threshold}') else 'no')")
-    echo "  pass-1 purity=${PURITY} threshold=${ploidy_cap_purity_threshold} -> rerun=${NEED}"
+    NEED=$(python3 -c "print('yes' if float('$PURITY') < float('${ploidy_cap_purity_threshold:-}') else 'no')")
+    echo "  pass-1 purity=${PURITY} threshold=${ploidy_cap_purity_threshold:-} -> rerun=${NEED}"
     if [ "$NEED" = "yes" ]; then
         echo "[4b/7] Purity below threshold — re-running PURPLE with -max_ploidy ${ploidy_cap_value:-2} (pass 2)..."
         rm -rf "${WORK}"; mkdir -p "${WORK}"
@@ -135,20 +140,24 @@ echo "[5/7] Final purity result:"
 cat "${PTSV}"
 ls -lh "${WORK}/"
 
-eval "$(python3 - "$ATLAS" "$PTSV" <<'PY'
-import sys
+SCALARS_JSON=$(python3 - "$ATLAS" "$PTSV" <<'PY'
+import sys, json
 sys.path.insert(0, sys.argv[1])
 from purity import read_purity_ploidy
 f = read_purity_ploidy(sys.argv[2])
-print(f'FPUR={f.purity}; FPLO={f.ploidy_int()}; FSEX={f.sample_sex or "unknown"}')
+sex = f.sample_sex if f.sample_sex in ("male", "female") else "unknown"
+print(json.dumps({"purity": f.purity, "ploidy": f.ploidy_int(), "sex": sex}))
 PY
-)"
+)
+FPUR=$(jq -r '.purity' <<<"$SCALARS_JSON")
+FPLO=$(jq -r '.ploidy' <<<"$SCALARS_JSON")
+FSEX=$(jq -r '.sex'    <<<"$SCALARS_JSON")
 echo "  emitting purity=${FPUR} ploidy=${FPLO} sample_sex=${FSEX}"
 
 # ── 6b. Collect charts (if generated) ────────────────────────────────────
-PLOT_FILES=$(find "${WORK}/" -name "*.png" 2>/dev/null | sort)
-if [ -n "${PLOT_FILES}" ]; then
-    tar --no-same-owner -czf "${sample_id}.purple.plots.tar.gz" ${PLOT_FILES}
+mapfile -t -d '' PLOT_FILES < <(find "${WORK}/" -name "*.png" -print0 2>/dev/null)
+if [ "${#PLOT_FILES[@]}" -gt 0 ]; then
+    tar --no-same-owner -czf "${sample_id}.purple.plots.tar.gz" "${PLOT_FILES[@]}"
     HAVE_PLOTS=true
 else
     echo "  No chart PNGs generated (non-fatal)"
