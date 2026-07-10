@@ -155,7 +155,8 @@ run_purple_passes() {
             echo "[4b/7] Purity below threshold — re-running PURPLE with -max_ploidy ${ploidy_cap_value:-2} (pass 2)..."
             rm -rf "${WORK}"; mkdir -p "${WORK}"
             run_purple -max_ploidy "${ploidy_cap_value:-2}"
-            [[ -s "${PTSV}" ]] || { echo "ERROR: PURPLE purity TSV missing after pass 2" >&2; exit 1; }
+            [[ -s "${PTSV}" ]]      || { echo "ERROR: PURPLE purity TSV missing after pass 2"       >&2; exit 1; }
+            [[ -s "${RANGE_TSV}" ]] || { echo "ERROR: PURPLE purity range TSV missing after pass 2" >&2; exit 1; }
         fi
     fi
 }

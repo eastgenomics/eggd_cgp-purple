@@ -28,7 +28,7 @@ def read_purity_ploidy(path) -> PurityFit:
     try:
         purity = float(d["purity"])
         ploidy = float(d["ploidy"])
-    except (KeyError, ValueError) as e:
+    except (KeyError, ValueError, TypeError) as e:
         raise PurityParseError(str(e)) from e
     if not math.isfinite(purity) or not math.isfinite(ploidy):  # NaN/Inf/blank => broken PURPLE run
         raise PurityParseError(f"non-finite purity/ploidy in {path}")
