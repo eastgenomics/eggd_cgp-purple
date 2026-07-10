@@ -199,6 +199,14 @@ collect_charts() {
 # ── upload_outputs: dx upload all outputs and emit job-util bindings ──────────
 upload_outputs() {
     echo "[6/7] Uploading..."
+    # Ensure CNV fallback TSVs exist inside WORK before the tarball is assembled,
+    # so purple_tar always contains every emitted TSV even if PURPLE omitted them.
+    # Headers match PURPLE 4.4's *.purple.cnv.somatic.tsv / *.purple.cnv.gene.tsv columns.
+    local CNV_SOMATIC="${WORK}/${sample_id}.purple.cnv.somatic.tsv"
+    local CNV_GENE="${WORK}/${sample_id}.purple.cnv.gene.tsv"
+    [ -f "${CNV_SOMATIC}" ] || printf 'chromosome\tstart\tend\tcopyNumber\tbafCount\tobservedBAF\tbaf\tsegmentStartSupport\tsegmentEndSupport\tmethod\tdepthWindowCount\tgcContent\tminStart\tmaxStart\tminorAlleleCopyNumber\tmajorAlleleCopyNumber\n' > "${CNV_SOMATIC}"
+    [ -f "${CNV_GENE}" ]    || printf 'chromosome\tstart\tend\tgene\tminCopyNumber\tmaxCopyNumber\tsomaticRegions\ttranscriptId\tisCanonical\tchromosomeBand\tminRegions\tminRegionStart\tminRegionEnd\tminRegionStartSupport\tminRegionEndSupport\tminRegionMethod\tminMinorAlleleCopyNumber\tdepthWindowCount\n' > "${CNV_GENE}"
+
     # purple_tar bundles AMBER BAF for the downstream IGV plotter:
     # copy PURPLE outputs into the AMBER extract dir, which already holds *.amber.baf.tsv.gz.
     cp -a "${WORK}/." "${AMBER_DIR}/"
@@ -211,12 +219,6 @@ upload_outputs() {
         dx-jobutil-add-output plots_tar "$(dx upload "${sample_id}.purple.plots.tar.gz" --brief)" --class=file
     fi
 
-    # Standalone CNV call TSVs — always exist (header-only fallback if PURPLE omitted them).
-    # Headers below match PURPLE 4.4's *.purple.cnv.somatic.tsv / *.purple.cnv.gene.tsv columns.
-    local CNV_SOMATIC="${WORK}/${sample_id}.purple.cnv.somatic.tsv"
-    local CNV_GENE="${WORK}/${sample_id}.purple.cnv.gene.tsv"
-    [ -f "${CNV_SOMATIC}" ] || printf 'chromosome\tstart\tend\tcopyNumber\tbafCount\tobservedBAF\tbaf\tsegmentStartSupport\tsegmentEndSupport\tmethod\tdepthWindowCount\tgcContent\tminStart\tmaxStart\tminorAlleleCopyNumber\tmajorAlleleCopyNumber\n' > "${CNV_SOMATIC}"
-    [ -f "${CNV_GENE}" ]    || printf 'chromosome\tstart\tend\tgene\tminCopyNumber\tmaxCopyNumber\tsomaticRegions\ttranscriptId\tisCanonical\tchromosomeBand\tminRegions\tminRegionStart\tminRegionEnd\tminRegionStartSupport\tminRegionEndSupport\tminRegionMethod\tminMinorAlleleCopyNumber\tdepthWindowCount\n' > "${CNV_GENE}"
     dx-jobutil-add-output cnv_somatic_tsv "$(dx upload "${CNV_SOMATIC}" --brief)" --class=file
     dx-jobutil-add-output cnv_gene_tsv    "$(dx upload "${CNV_GENE}"    --brief)" --class=file
 
