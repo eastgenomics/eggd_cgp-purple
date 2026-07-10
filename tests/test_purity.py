@@ -32,3 +32,16 @@ def test_non_finite_raises(tmp_path, bad):
     p.write_text(f"purity\tploidy\n{bad}\t2.0\n")
     with pytest.raises(PurityParseError):
         read_purity_ploidy(p)
+
+
+@pytest.mark.parametrize("purity,ploidy", [
+    ("-0.01", "2.0"),   # purity below 0
+    ("1.01",  "2.0"),   # purity above 1
+    ("0.5",   "-1.0"),  # ploidy negative
+    ("0.5",   "0.0"),   # ploidy zero
+])
+def test_biologically_invalid_raises(tmp_path, purity, ploidy):
+    p = tmp_path / "invalid.tsv"
+    p.write_text(f"purity\tploidy\n{purity}\t{ploidy}\n")
+    with pytest.raises(PurityParseError):
+        read_purity_ploidy(p)
