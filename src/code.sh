@@ -56,6 +56,10 @@ prepare_inputs() {
     COBALT_DIR=$(find . -maxdepth 2 -name "*.cobalt.ratio.tsv.gz" -printf "%h\n" | head -1)
     [[ -n "${AMBER_DIR}"  ]] || { echo "ERROR: AMBER dir not found in tar"  >&2; exit 1; }
     [[ -n "${COBALT_DIR}" ]] || { echo "ERROR: COBALT dir not found in tar" >&2; exit 1; }
+    # Guard: AMBER/COBALT dirs must be a proper subdirectory — if they resolve to '.' the
+    # later 'tar ${AMBER_DIR}/' would bundle the entire working directory into purple_tar.
+    [[ "${AMBER_DIR}"  == "." ]] && { echo "ERROR: AMBER baf found at working-dir root — unexpected tar layout; expected a named subdirectory" >&2; exit 1; }
+    [[ "${COBALT_DIR}" == "." ]] && { echo "ERROR: COBALT ratio found at working-dir root — unexpected tar layout" >&2; exit 1; }
     echo "  AMBER dir:  ${AMBER_DIR}"
     echo "  COBALT dir: ${COBALT_DIR}"
 
