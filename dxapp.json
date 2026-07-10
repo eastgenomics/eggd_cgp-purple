@@ -189,6 +189,10 @@
       {
         "name": "fonts-cmu",
         "package_manager": "apt"
+      },
+      {
+        "name": "python3",
+        "package_manager": "apt"
       }
     ],
     "systemRequirements": {

@@ -16,6 +16,7 @@ verify_deps() {
     samtools --version 2>&1 | sed -n '1p'
     bgzip    --version 2>&1 | sed -n '1p'
     jq       --version 2>&1 | sed -n '1p'
+    python3  --version 2>&1 | sed -n '1p'
     Rscript  --version 2>&1 | sed -n '1p'
     circos   --version 2>&1 | sed -n '1p' || echo "circos: $(which circos 2>/dev/null || echo not found)"
 }
