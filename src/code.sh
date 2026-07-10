@@ -76,17 +76,7 @@ prepare_inputs() {
 
 # ── resolve_ploidy_cap: call ploidy_gate.decide() and export shell vars ───────
 # Sets FIRST_ARGS_JSON, FIRST_ARGS (array), CONDITIONAL (yes|no), MODE (none|static|conditional).
-#
-# Python is used here — not merely to read $max_ploidy — but to run decide(), which:
-#   1. validates mutual exclusivity of max_ploidy / ploidy_cap_purity_threshold,
-#   2. selects the cap mode (NONE / STATIC / CONDITIONAL),
-#   3. builds the PURPLE first-pass arg list as a JSON array.
-# This logic is unit-tested in tests/test_ploidy_gate.py; keeping it in Python
-# means the tests cover the same code that runs in production.
-#
-# CONDITIONAL is a field on the PloidyDecision dataclass returned by decide():
-# True when ploidy_cap_purity_threshold is supplied (CONDITIONAL mode), False otherwise.
-# It is printed as "CONDITIONAL=yes|no" and captured into the shell via eval.
+# Logic lives in atlas/resolve_cap.py (unit-tested via tests/test_ploidy_gate.py).
 resolve_ploidy_cap() {
     echo "[3/7] Resolving ploidy-cap decision..."
     local eval_output
@@ -94,19 +84,7 @@ resolve_ploidy_cap() {
         max_ploidy="${max_ploidy:-}" \
         ploidy_cap_purity_threshold="${ploidy_cap_purity_threshold:-}" \
         ploidy_cap_value="${ploidy_cap_value:-2}" \
-        python3 - "$ATLAS" <<'PY'
-import sys, os, json
-sys.path.insert(0, sys.argv[1])
-from ploidy_gate import decide
-d = decide(
-    max_ploidy=(int(os.environ["max_ploidy"]) if os.environ.get("max_ploidy") else None),
-    threshold=(float(os.environ["ploidy_cap_purity_threshold"]) if os.environ.get("ploidy_cap_purity_threshold") else None),
-    cap_value=int(os.environ.get("ploidy_cap_value", "2")),
-)
-print("FIRST_ARGS_JSON=" + json.dumps(json.dumps(d.first_pass_args)))  # quoted JSON string
-print("CONDITIONAL=" + ("yes" if d.conditional else "no"))
-print("MODE=" + d.mode.value)
-PY
+        python3 "$ATLAS/resolve_cap.py"
     )
     eval "$eval_output"
     echo "  mode=${MODE}  conditional=${CONDITIONAL}  first_pass_args=${FIRST_ARGS_JSON}"
@@ -149,8 +127,8 @@ run_purple_passes() {
 
     if [ "$CONDITIONAL" = "yes" ]; then
         local purity need
-        purity=$(python3 -c "import sys;sys.path.insert(0,'$ATLAS');from purity import read_purity_ploidy as r;print(r('$PTSV').purity)")
-        need=$(python3 -c "print('yes' if float('$purity') < float('${ploidy_cap_purity_threshold:-}') else 'no')")
+        purity=$(python3 "$ATLAS/parse_purity_scalars.py" "$PTSV" | jq -r '.purity')
+        need=$(awk -v p="$purity" -v t="${ploidy_cap_purity_threshold:-0}" 'BEGIN{print (p+0 < t+0) ? "yes" : "no"}')
         echo "  pass-1 purity=${purity} threshold=${ploidy_cap_purity_threshold:-} -> rerun=${need}"
         if [ "$need" = "yes" ]; then
             echo "[4b/7] Purity below threshold — re-running PURPLE with -max_ploidy ${ploidy_cap_value:-2} (pass 2)..."
@@ -169,15 +147,7 @@ parse_scalars() {
     ls -lh "${WORK}/"
 
     local scalars_json
-    scalars_json=$(python3 - "$ATLAS" "$PTSV" <<'PY'
-import sys, json
-sys.path.insert(0, sys.argv[1])
-from purity import read_purity_ploidy
-f = read_purity_ploidy(sys.argv[2])
-sex = f.sample_sex if f.sample_sex in ("male", "female") else "unknown"
-print(json.dumps({"purity": f.purity, "ploidy": f.ploidy_int(), "sex": sex}))
-PY
-)
+    scalars_json=$(python3 "$ATLAS/parse_purity_scalars.py" "$PTSV")
     FPUR=$(jq -r '.purity' <<<"$scalars_json")
     FPLO=$(jq -r '.ploidy' <<<"$scalars_json")
     FSEX=$(jq -r '.sex'    <<<"$scalars_json")
