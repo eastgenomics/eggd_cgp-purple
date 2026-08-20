@@ -2,7 +2,7 @@
   "name": "eggd_cgp-purple",
   "title": "eggd_cgp-purple",
   "summary": "PURPLE 4.4-beta.12 tumour-only purity/ploidy/CN with optional max-ploidy cap and scalar outputs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dxapi": "1.0.0",
   "developers": ["org-emee_1"],
   "authorizedUsers": ["org-emee_1"],
@@ -141,59 +141,16 @@
     "release": "24.04",
     "version": "0",
     "timeoutPolicy": {"*": {"hours": 6}},
-    "execDepends": [
-      {
-        "name": "openjdk-21-jre-headless",
-        "package_manager": "apt"
-      },
-      {
-        "name": "samtools",
-        "package_manager": "apt"
-      },
-      {
-        "name": "tabix",
-        "package_manager": "apt"
-      },
-      {
-        "name": "jq",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-base",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-ggplot2",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-tidyr",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-dplyr",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-cowplot",
-        "package_manager": "apt"
-      },
-      {
-        "name": "circos",
-        "package_manager": "apt"
-      },
-      {
-        "name": "fonts-circos-symbols",
-        "package_manager": "apt"
-      },
-      {
-        "name": "fonts-cmu",
-        "package_manager": "apt"
-      },
-      {
-        "name": "python3",
-        "package_manager": "apt"
-      }
+    "assetDepends": [
+	    {
+		    "id": "record-J9zVB3Q4p63ZKPgKqg98JYzj"
+	    },
+	    {
+		    "id": "record-JB3KV9Q4X798ZVk8KGXFPxv6"
+	    },
+	    {
+		    "id": "record-J9QzZyj487v9Gj2QgP7vK47g"
+	    }
     ],
     "systemRequirements": {
       "*": {"instanceType": "mem2_ssd1_v2_x4"}
