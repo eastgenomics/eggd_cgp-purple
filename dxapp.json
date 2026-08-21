@@ -2,10 +2,14 @@
   "name": "eggd_cgp-purple",
   "title": "eggd_cgp-purple",
   "summary": "PURPLE 4.4-beta.12 tumour-only purity/ploidy/CN with optional max-ploidy cap and scalar outputs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dxapi": "1.0.0",
   "developers": ["org-emee_1"],
   "authorizedUsers": ["org-emee_1"],
+  "whatsNew": {
+	  "v1.0.0": "New app",
+	  "v1.0.1": "Replaced execDepends dependency management with pre-built app assets"
+  },
   "inputSpec": [
     {
       "name": "sample_id",
@@ -141,59 +145,25 @@
     "release": "24.04",
     "version": "0",
     "timeoutPolicy": {"*": {"hours": 6}},
-    "execDepends": [
-      {
-        "name": "openjdk-21-jre-headless",
-        "package_manager": "apt"
-      },
-      {
-        "name": "samtools",
-        "package_manager": "apt"
-      },
-      {
-        "name": "tabix",
-        "package_manager": "apt"
-      },
-      {
-        "name": "jq",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-base",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-ggplot2",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-tidyr",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-dplyr",
-        "package_manager": "apt"
-      },
-      {
-        "name": "r-cran-cowplot",
-        "package_manager": "apt"
-      },
-      {
-        "name": "circos",
-        "package_manager": "apt"
-      },
-      {
-        "name": "fonts-circos-symbols",
-        "package_manager": "apt"
-      },
-      {
-        "name": "fonts-cmu",
-        "package_manager": "apt"
-      },
-      {
-        "name": "python3",
-        "package_manager": "apt"
-      }
+    "assetDepends": [
+	    {
+		    "name": "openjdk-21-jre-headless",
+		    "project": "project-Fkb6Gkj433GVVvj73J7x8KbV",
+		    "version": "21",
+		    "folder": "/app_assets/openjdk-21-jre-headless"
+	    },
+	    {
+		    "name": "eggd_cgp-purple-r-packages",
+		    "project": "project-Fkb6Gkj433GVVvj73J7x8KbV",
+		    "version": "1.0.0",
+		    "folder": "/app_assets/eggd_cgp-purple-r-packages"
+	    },
+	    {
+		    "name": "htslib_suite_asset",
+		    "project": "project-Fkb6Gkj433GVVvj73J7x8KbV",
+		    "version": "1.24",
+		    "folder": "/app_assets/htslib/htslib_v1.24.0/"
+	    }
     ],
     "systemRequirements": {
       "*": {"instanceType": "mem2_ssd1_v2_x4"}
