@@ -6,6 +6,10 @@
   "dxapi": "1.0.0",
   "developers": ["org-emee_1"],
   "authorizedUsers": ["org-emee_1"],
+  "whatsNew": {
+	  "v1.0.0": "New app",
+	  "v1.0.1": "Replaced execDepends dependency management with pre-built app assets"
+  },
   "inputSpec": [
     {
       "name": "sample_id",
@@ -143,13 +147,22 @@
     "timeoutPolicy": {"*": {"hours": 6}},
     "assetDepends": [
 	    {
-		    "id": "record-J9zVB3Q4p63ZKPgKqg98JYzj"
+		    "name": "openjdk-21-jre-headless",
+		    "project": "project-Fkb6Gkj433GVVvj73J7x8KbV",
+		    "version": "21",
+		    "folder": "/app_assets/openjdk-21-jre-headless"
 	    },
 	    {
-		    "id": "record-JB3KV9Q4X798ZVk8KGXFPxv6"
+		    "name": "eggd_cgp-purple-r-packages",
+		    "project": "project-Fkb6Gkj433GVVvj73J7x8KbV",
+		    "version": "1.0.0",
+		    "folder": "/app_assets/eggd_cgp-purple-r-packages"
 	    },
 	    {
-		    "id": "record-J9QzZyj487v9Gj2QgP7vK47g"
+		    "name": "htslib_suite_asset",
+		    "project": "project-Fkb6Gkj433GVVvj73J7x8KbV",
+		    "version": "1.24",
+		    "folder": "/app_assets/htslib/htslib_v1.24.0/"
 	    }
     ],
     "systemRequirements": {
